@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoScan AI — Intelligent Parts Detection System</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=Barlow:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --surface: #0d1318;
+    --surface2: #131d24;
+    --border: #1e2d38;
+    --accent: #f5a623;
+    --accent2: #e8441a;
+    --accent3: #00d4aa;
+    --accent4: #3b82f6;
+    --text: #c8d8e4;
+    --text-dim: #5a7a8a;
+    --red: #ff3b3b;
+    --green: #00e676;
+    --yellow: #ffca28;
+    --grid: rgba(255,255,255,0.025);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 60px, var(--grid) 60px, var(--grid) 61px),
+      repeating-linear-gradient(90deg, transparent, transparent 60px, var(--grid) 60px, var(--grid) 61px);
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 40px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,12,16,0.95);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%,100% { box-shadow: 0 0 0 0 rgba(245,166,35,0); }
+    50% { box-shadow: 0 0 20px 4px rgba(245,166,35,0.3); }
+  }
+
+  .logo-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: #fff;
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .status-dot {
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .nav-pills {
+    display: flex; gap: 4px;
+  }
+
+  .nav-pill {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+  }
+
+  .nav-pill:hover, .nav-pill.active {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+
+  /* HERO SCAN AREA */
+  .hero {
+    padding: 40px 40px 0;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .scan-zone {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+    min-height: 420px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .scan-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+  }
+
+  .scan-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .scan-controls {
+    display: flex; gap: 8px;
+  }
+
+  .ctrl-btn {
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+
+  .ctrl-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .ctrl-btn.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+
+  .scan-viewport {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    min-height: 340px;
+  }
+
+  /* Simulated car part image area */
+  .part-display {
+    width: 340px;
+    height: 280px;
+    position: relative;
+    background: linear-gradient(135deg, #1a2530 0%, #0f1a22 100%);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Fake brake disc SVG */
+  .brake-disc-svg {
+    width: 220px;
+    height: 220px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Scanning animation overlay */
+  .scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent3), transparent);
+    box-shadow: 0 0 12px var(--accent3);
+    animation: scandown 2.5s ease-in-out infinite;
+    z-index: 10;
+    top: 0;
+    opacity: 0;
+  }
+
+  .scanning .scan-line { opacity: 1; }
+
+  @keyframes scandown {
+    0% { top: 0%; }
+    100% { top: 100%; }
+  }
+
+  /* Detection boxes */
+  .detect-box {
+    position: absolute;
+    border: 2px solid;
+    z-index: 8;
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+  }
+
+  .detect-box.rust { border-color: var(--red); }
+  .detect-box.scratch { border-color: var(--yellow); }
+  .detect-box.wear { border-color: var(--accent2); }
+  .detect-box.crack { border-color: #cc44ff; }
+
+  .detect-box .label {
+    position: absolute;
+    top: -20px; left: -1px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    padding: 2px 5px;
+    font-weight: 600;
+    white-space: nowrap;
+    letter-spacing: 1px;
+  }
+
+  .detect-box.rust .label { background: var(--red); color: #fff; }
+  .detect-box.scratch .label { background: var(--yellow); color: #000; }
+  .detect-box.wear .label { background: var(--accent2); color: #fff; }
+  .detect-box.crack .label { background: #cc44ff; color: #fff; }
+
+  .show-boxes .detect-box { opacity: 1; }
+
+  /* Corner brackets */
+  .corner { position: absolute; width: 20px; height: 20px; border-color: var(--accent3); border-style: solid; }
+  .corner.tl { top: 8px; left: 8px; border-width: 2px 0 0 2px; }
+  .corner.tr { top: 8px; right: 8px; border-width: 2px 2px 0 0; }
+  .corner.bl { bottom: 8px; left: 8px; border-width: 0 0 2px 2px; }
+  .corner.br { bottom: 8px; right: 8px; border-width: 0 2px 2px 0; }
+
+  /* Side panel */
+  .side-panel { display: flex; flex-direction: column; gap: 16px; }
+
+  .panel-card {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .panel-card-header {
+    padding: 10px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .panel-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .panel-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    padding: 2px 8px;
+    letter-spacing: 1px;
+  }
+
+  .badge-warn { background: rgba(255,202,40,0.15); color: var(--yellow); border: 1px solid rgba(255,202,40,0.3); }
+  .badge-ok { background: rgba(0,230,118,0.15); color: var(--green); border: 1px solid rgba(0,230,118,0.3); }
+  .badge-fail { background: rgba(255,59,59,0.15); color: var(--red); border: 1px solid rgba(255,59,59,0.3); }
+
+  .panel-body { padding: 14px 16px; }
+
+  /* Score ring */
+  .score-ring-wrap {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 14px;
+  }
+
+  .score-ring {
+    position: relative; width: 80px; height: 80px; flex-shrink: 0;
+  }
+
+  .score-ring svg { transform: rotate(-90deg); }
+
+  .score-ring .ring-bg { fill: none; stroke: var(--border); stroke-width: 6; }
+  .score-ring .ring-val { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1.5s ease; }
+
+  .score-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+
+  .score-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    line-height: 1;
+  }
+
+  .score-unit {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    color: var(--text-dim);
+  }
+
+  .score-details { flex: 1; }
+  .score-label { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .score-desc { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+
+  /* Metric rows */
+  .metric-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+
+  .metric-row:last-child { border-bottom: none; }
+
+  .metric-name { color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 1px; }
+
+  .metric-val { font-weight: 600; font-size: 12px; }
+
+  .metric-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+
+  .metric-bar-fill { height: 100%; border-radius: 2px; transition: width 1.2s ease; }
+
+  /* MAIN GRID */
+  .main-grid {
+    padding: 24px 40px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  /* Detection cards */
+  .detection-card {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden;
+    transition: border-color 0.3s;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .detection-card:hover { border-color: var(--accent); }
+
+  .detection-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .card-rust::before { background: linear-gradient(90deg, var(--red), #ff7043); }
+  .card-scratch::before { background: linear-gradient(90deg, var(--yellow), #ff9800); }
+  .card-counterfeit::before { background: linear-gradient(90deg, #cc44ff, #7c3aed); }
+  .card-thickness::before { background: linear-gradient(90deg, var(--accent4), #06b6d4); }
+  .card-material::before { background: linear-gradient(90deg, var(--accent3), #059669); }
+  .card-thermal::before { background: linear-gradient(90deg, #f97316, var(--red)); }
+  .card-crack::before { background: linear-gradient(90deg, #e11d48, #9f1239); }
+  .card-acoustic::before { background: linear-gradient(90deg, #8b5cf6, #4f46e5); }
+  .card-wear::before { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+
+  .card-inner { padding: 18px 20px; }
+
+  .card-icon {
+    width: 42px; height: 42px;
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    margin-bottom: 14px;
+  }
+
+  .icon-rust { background: rgba(255,59,59,0.12); }
+  .icon-scratch { background: rgba(255,202,40,0.12); }
+  .icon-counterfeit { background: rgba(204,68,255,0.12); }
+  .icon-thickness { background: rgba(59,130,246,0.12); }
+  .icon-material { background: rgba(0,212,170,0.12); }
+  .icon-thermal { background: rgba(249,115,22,0.12); }
+  .icon-crack { background: rgba(225,29,72,0.12); }
+  .icon-acoustic { background: rgba(139,92,246,0.12); }
+  .icon-wear { background: rgba(245,166,35,0.12); }
+
+  .card-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .card-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+
+  .capability-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .capability-list li {
+    font-size: 11px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    line-height: 1.5;
+  }
+
+  .capability-list li::before {
+    content: '▸';
+    color: var(--accent);
+    flex-shrink: 0;
+    font-size: 10px;
+    margin-top: 1px;
+  }
+
+  .card-footer {
+    padding: 10px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .accuracy-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .acc-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--text-dim); letter-spacing: 1px; }
+
+  .acc-track {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .acc-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent3), var(--accent4));
+    transition: width 1.5s ease;
+    width: 0%;
+  }
+
+  .acc-pct {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--accent3);
+    min-width: 32px;
+    text-align: right;
+  }
+
+  /* SCRATCH SECTION - special highlight */
+  .scratch-section {
+    padding: 0 40px 24px;
+  }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .scratch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  .scratch-card {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scratch-card::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 60px; height: 60px;
+    background: radial-gradient(circle at top right, rgba(255,202,40,0.08), transparent);
+  }
+
+  .scratch-type {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+    color: var(--yellow);
+  }
+
+  .scratch-depth {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .scratch-unit {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .scratch-severity {
+    display: flex;
+    gap: 3px;
+    margin-bottom: 10px;
+  }
+
+  .sev-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .sev-dot.active { background: var(--yellow); box-shadow: 0 0 6px rgba(255,202,40,0.5); }
+  .sev-dot.active.high { background: var(--red); box-shadow: 0 0 6px rgba(255,59,59,0.5); }
+  .sev-dot.active.low { background: var(--green); box-shadow: 0 0 6px rgba(0,230,118,0.5); }
+
+  .scratch-info { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+
+  /* PIPELINE SECTION */
+  .pipeline-section {
+    padding: 0 40px 24px;
+  }
+
+  .pipeline {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 28px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .pipe-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-width: 100px;
+    flex: 1;
+    text-align: center;
+    position: relative;
+  }
+
+  .pipe-step::after {
+    content: '→';
+    position: absolute;
+    right: -12px;
+    top: 20px;
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+
+  .pipe-step:last-child::after { display: none; }
+
+  .pipe-icon {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    background: var(--surface2);
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  .pipe-icon.active {
+    border-color: var(--accent3);
+    background: rgba(0,212,170,0.1);
+    box-shadow: 0 0 16px rgba(0,212,170,0.3);
+  }
+
+  .pipe-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    max-width: 80px;
+  }
+
+  /* SPEC TABLE */
+  .spec-section {
+    padding: 0 40px 40px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .spec-table { border: 1px solid var(--border); background: var(--surface); overflow: hidden; }
+
+  .spec-table-header {
+    padding: 12px 18px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  td {
+    padding: 10px 18px;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  td:first-child {
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    width: 45%;
+  }
+
+  td:last-child { font-weight: 600; }
+
+  .td-green { color: var(--green); }
+  .td-yellow { color: var(--yellow); }
+  .td-red { color: var(--red); }
+  .td-blue { color: var(--accent4); }
+  .td-acc { color: var(--accent); }
+
+  /* SCAN ANIMATION STATE */
+  .btn-scan {
+    padding: 8px 20px;
+    background: var(--accent3);
+    color: #000;
+    border: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-scan:hover { background: #00ffcc; }
+
+  /* Animate in */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .detection-card, .panel-card, .scratch-card, .spec-table {
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .detection-card:nth-child(1) { animation-delay: 0.05s; }
+  .detection-card:nth-child(2) { animation-delay: 0.1s; }
+  .detection-card:nth-child(3) { animation-delay: 0.15s; }
+  .detection-card:nth-child(4) { animation-delay: 0.2s; }
+  .detection-card:nth-child(5) { animation-delay: 0.25s; }
+  .detection-card:nth-child(6) { animation-delay: 0.3s; }
+  .detection-card:nth-child(7) { animation-delay: 0.35s; }
+  .detection-card:nth-child(8) { animation-delay: 0.4s; }
+  .detection-card:nth-child(9) { animation-delay: 0.45s; }
+
+  /* LIVE READOUT */
+  .live-readout {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--accent3);
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    background: rgba(0,212,170,0.04);
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+  }
+
+  .readout-cursor {
+    width: 6px; height: 12px;
+    background: var(--accent3);
+    animation: blink 1s step-end infinite;
+    flex-shrink: 0;
+  }
+
+  .element-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+  }
+
+  .el-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    width: 20px;
+    letter-spacing: 1px;
+  }
+
+  .el-track {
+    flex: 1;
+    height: 5px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .el-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1.5s ease;
+  }
+
+  .el-pct {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    min-width: 36px;
+    text-align: right;
+  }
+
+  /* footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 18px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+  }
+
+  .footer-brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+  }
+
+  .footer-brand span { color: var(--accent); }
+
+  .footer-info {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* Tooltip */
+  .tag-hardware {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    padding: 2px 6px;
+    border: 1px solid rgba(59,130,246,0.4);
+    color: var(--accent4);
+    letter-spacing: 1px;
+    border-radius: 1px;
+  }
+
+  .tag-ai {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    padding: 2px 6px;
+    border: 1px solid rgba(0,212,170,0.4);
+    color: var(--accent3);
+    letter-spacing: 1px;
+    border-radius: 1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">⬡</div>
+    <div class="logo-text">AUTO<span>SCAN</span> AI</div>
+  </div>
+  <div class="nav-pills">
+    <button class="nav-pill active">DETECTION</button>
+    <button class="nav-pill">ANALYSIS</button>
+    <button class="nav-pill">REPORTS</button>
+    <button class="nav-pill">DATABASE</button>
+  </div>
+  <div class="header-status">
+    <div class="status-dot"><div class="dot"></div> SYSTEM ONLINE</div>
+    <span>MODEL v4.2.1</span>
+    <span>12 DETECTORS ACTIVE</span>
+  </div>
+</header>
+
+<!-- HERO SCAN AREA -->
+<div class="hero">
+  <div class="scan-zone" id="scanZone">
+    <div class="scan-header">
+      <span class="scan-title">// LIVE SCAN VIEWPORT — BRAKE DISC ASSEMBLY</span>
+      <div class="scan-controls">
+        <button class="ctrl-btn" onclick="resetScan()">RESET</button>
+        <button class="ctrl-btn" onclick="toggleBoxes()">TOGGLE MARKERS</button>
+        <button class="btn-scan" onclick="startScan()">▶ RUN SCAN</button>
+      </div>
+    </div>
+
+    <div class="scan-viewport" id="viewport">
+      <div class="part-display" id="partDisplay">
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+        <div class="scan-line" id="scanLine"></div>
+
+        <!-- SVG Brake Disc -->
+        <svg class="brake-disc-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <!-- Outer ring -->
+          <circle cx="100" cy="100" r="94" fill="none" stroke="#2a3d4d" stroke-width="1"/>
+          <circle cx="100" cy="100" r="90" fill="#1a2b38" stroke="#2d4455" stroke-width="2"/>
+          <!-- Disc body -->
+          <circle cx="100" cy="100" r="88" fill="#1e3040"/>
+          <!-- Ventilation slots -->
+          <g fill="none" stroke="#0d1a24" stroke-width="8">
+            <line x1="100" y1="20" x2="100" y2="55" transform="rotate(0 100 100)"/>
+            <line x1="100" y1="20" x2="100" y2="55" transform="rotate(30 100 100)"/>
+            <line x1="100" y1="20" x2="100" y2="55" transform="rotate(60 100 100)"/>
+            <line x1="100" y1="20" x2="100" y2="55" transform="rotate(90 100 100)"/>
+            <line x1="100" y1="20" x2="100" y2="55" transform="rotate(120 100 100)"/>
+            <line x1="100" y1="20" x2="100" y2="55" transform="rotate(150 100 100)"/>
+            <line x1="100" y1="20" x2="100" y2="55" transform="rotate(180 100 100)"/>
+            <line x1="100" y1="20" x2="100" y2="55" transform="rotate(210 100 100)"/>
+            <line x1="100" y1="20" x2="100" y2="55" transform="rotate(240 100 100)"/>
+            <line x1="100" y1="20" x2="100" y2="55" transform="rotate(270 100 100)"/>
+            <line x1="100" y1="20" x2="100" y2="55" transform="rotate(300 100 100)"/>
+            <line x1="100" y1="20" x2="100" y2="55" transform="rotate(330 100 100)"/>
+          </g>
+          <!-- Surface texture -->
+          <circle cx="100" cy="100" r="60" fill="#243545" stroke="#2a3d4d" stroke-width="1"/>
+          <!-- Hub ring -->
+          <circle cx="100" cy="100" r="32" fill="#1a2b38" stroke="#3a5060" stroke-width="3"/>
+          <!-- Center hole -->
+          <circle cx="100" cy="100" r="15" fill="#0d1318" stroke="#2d4455" stroke-width="2"/>
+          <!-- Bolt holes -->
+          <circle cx="100" cy="62" r="5" fill="#0d1318" stroke="#3a5060" stroke-width="1.5"/>
+          <circle cx="133" cy="81" r="5" fill="#0d1318" stroke="#3a5060" stroke-width="1.5"/>
+          <circle cx="120" cy="118" r="5" fill="#0d1318" stroke="#3a5060" stroke-width="1.5"/>
+          <circle cx="80" cy="118" r="5" fill="#0d1318" stroke="#3a5060" stroke-width="1.5"/>
+          <circle cx="67" cy="81" r="5" fill="#0d1318" stroke="#3a5060" stroke-width="1.5"/>
+          <!-- Rust patch -->
+          <ellipse cx="145" cy="60" rx="14" ry="10" fill="#8b2a00" opacity="0.7" transform="rotate(-20 145 60)"/>
+          <ellipse cx="148" cy="62" rx="8" ry="6" fill="#a33000" opacity="0.5" transform="rotate(-20 148 62)"/>
+          <!-- Scratch marks -->
+          <line x1="60" y1="130" x2="90" y2="155" stroke="#c8a060" stroke-width="1.5" opacity="0.8"/>
+          <line x1="63" y1="128" x2="93" y2="153" stroke="#b09050" stroke-width="0.8" opacity="0.5"/>
+          <!-- Crack -->
+          <path d="M 55 75 Q 65 82 60 90" fill="none" stroke="#4a0010" stroke-width="1.5" opacity="0.9"/>
+          <!-- Wear ring -->
+          <circle cx="100" cy="100" r="72" fill="none" stroke="#4a3020" stroke-width="2" stroke-dasharray="4 3" opacity="0.5"/>
+        </svg>
+
+        <!-- Detection boxes (positioned over specific areas of the disc) -->
+        <div class="detect-box rust" style="left:62%;top:8%;width:22%;height:25%">
+          <div class="label">RUST 73%</div>
+        </div>
+        <div class="detect-box scratch" style="left:16%;top:58%;width:30%;height:28%">
+          <div class="label">SCRATCH 2.1mm</div>
+        </div>
+        <div class="detect-box crack" style="left:10%;top:28%;width:20%;height:22%">
+          <div class="label">MICRO-CRACK</div>
+        </div>
+        <div class="detect-box wear" style="left:22%;top:22%;width:55%;height:56%">
+          <div class="label">WEAR ZONE</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="live-readout" id="readout">
+      <div class="readout-cursor"></div>
+      <span id="readoutText">READY — CLICK "RUN SCAN" TO ANALYZE PART</span>
+    </div>
+  </div>
+
+  <!-- SIDE PANEL -->
+  <div class="side-panel">
+    <!-- Overall score -->
+    <div class="panel-card">
+      <div class="panel-card-header">
+        <span class="panel-label">PART HEALTH SCORE</span>
+        <span class="panel-badge badge-warn" id="healthBadge">DEGRADED</span>
+      </div>
+      <div class="panel-body">
+        <div class="score-ring-wrap">
+          <div class="score-ring">
+            <svg width="80" height="80" viewBox="0 0 80 80">
+              <circle class="ring-bg" cx="40" cy="40" r="30"/>
+              <circle class="ring-val" id="ringVal" cx="40" cy="40" r="30"
+                stroke="#f5a623"
+                stroke-dasharray="188.5"
+                stroke-dashoffset="90"/>
+            </svg>
+            <div class="score-center">
+              <span class="score-num" style="color:var(--yellow)" id="scoreNum">52</span>
+              <span class="score-unit">/ 100</span>
+            </div>
+          </div>
+          <div class="score-details">
+            <div class="score-label" style="color:var(--yellow)">Moderate Wear</div>
+            <div class="score-desc">Part requires inspection. Rust and surface scratches detected. Replace within 3–6 months.</div>
+          </div>
+        </div>
+
+        <div class="metric-row">
+          <div>
+            <div class="metric-name">CORROSION COVERAGE</div>
+            <div class="metric-bar"><div class="metric-bar-fill" style="width:31%;background:var(--red)"></div></div>
+          </div>
+          <div class="metric-val" style="color:var(--red)">31%</div>
+        </div>
+        <div class="metric-row">
+          <div>
+            <div class="metric-name">SURFACE SCRATCHES</div>
+            <div class="metric-bar"><div class="metric-bar-fill" style="width:55%;background:var(--yellow)"></div></div>
+          </div>
+          <div class="metric-val" style="color:var(--yellow)">MED</div>
+        </div>
+        <div class="metric-row">
+          <div>
+            <div class="metric-name">DISC THICKNESS</div>
+            <div class="metric-bar"><div class="metric-bar-fill" style="width:68%;background:var(--accent3)"></div></div>
+          </div>
+          <div class="metric-val" style="color:var(--accent3)">17.2mm</div>
+        </div>
+        <div class="metric-row">
+          <div>
+            <div class="metric-name">AUTHENTICITY</div>
+            <div class="metric-bar"><div class="metric-bar-fill" style="width:91%;background:var(--accent4)"></div></div>
+          </div>
+          <div class="metric-val" style="color:var(--accent4)">OEM</div>
+        </div>
+        <div class="metric-row">
+          <div>
+            <div class="metric-name">EST. REMAINING LIFE</div>
+            <div class="metric-bar"><div class="metric-bar-fill" style="width:40%;background:var(--accent)"></div></div>
+          </div>
+          <div class="metric-val" style="color:var(--accent)">~4 mo</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Element composition -->
+    <div class="panel-card">
+      <div class="panel-card-header">
+        <span class="panel-label">ELEMENTAL COMPOSITION</span>
+        <span class="panel-badge badge-ok">XRF SCAN</span>
+      </div>
+      <div class="panel-body">
+        <div class="element-bar">
+          <span class="el-name">Fe</span>
+          <div class="el-track"><div class="el-fill" style="width:92%;background:linear-gradient(90deg,#3b82f6,#06b6d4)"></div></div>
+          <span class="el-pct" style="color:var(--accent4)">92.1%</span>
+        </div>
+        <div class="element-bar" style="margin-top:8px">
+          <span class="el-name">C</span>
+          <div class="el-track"><div class="el-fill" style="width:35%;background:linear-gradient(90deg,#8b5cf6,#6366f1)"></div></div>
+          <span class="el-pct" style="color:#8b5cf6">3.5%</span>
+        </div>
+        <div class="element-bar" style="margin-top:8px">
+          <span class="el-name">Si</span>
+          <div class="el-track"><div class="el-fill" style="width:22%;background:linear-gradient(90deg,#10b981,#059669)"></div></div>
+          <span class="el-pct" style="color:var(--accent3)">2.2%</span>
+        </div>
+        <div class="element-bar" style="margin-top:8px">
+          <span class="el-name">Mn</span>
+          <div class="el-track"><div class="el-fill" style="width:12%;background:linear-gradient(90deg,#f59e0b,#d97706)"></div></div>
+          <span class="el-pct" style="color:var(--accent)">1.2%</span>
+        </div>
+        <div class="element-bar" style="margin-top:8px">
+          <span class="el-name">Pb</span>
+          <div class="el-track"><div class="el-fill" style="width:1%;background:var(--red)"></div></div>
+          <span class="el-pct" style="color:var(--text-dim)">0.1%</span>
+        </div>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--accent3);font-family:'IBM Plex Mono',monospace">
+          ✓ MATCHES OEM SPEC (±0.3%)
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCRATCH DETECTION HIGHLIGHT -->
+<div class="scratch-section" style="padding-top:24px">
+  <div class="section-label">SCRATCH & SURFACE DAMAGE DETECTION SYSTEM</div>
+  <div class="scratch-grid">
+    <div class="scratch-card">
+      <div class="scratch-type">DEEP SCRATCH</div>
+      <div class="scratch-depth">2.1</div>
+      <div class="scratch-unit">mm depth · 47mm length</div>
+      <div class="scratch-severity">
+        <div class="sev-dot active high"></div><div class="sev-dot active high"></div><div class="sev-dot active high"></div><div class="sev-dot"></div><div class="sev-dot"></div>
+      </div>
+      <div class="scratch-info">Deep gouge on braking surface. Exceeds 0.5mm tolerance. Immediate structural concern — affects braking performance.</div>
+    </div>
+    <div class="scratch-card">
+      <div class="scratch-type">SURFACE SCRATCH</div>
+      <div class="scratch-depth">0.3</div>
+      <div class="scratch-unit">mm depth · 22mm length</div>
+      <div class="scratch-severity">
+        <div class="sev-dot active low"></div><div class="sev-dot active low"></div><div class="sev-dot"></div><div class="sev-dot"></div><div class="sev-dot"></div>
+      </div>
+      <div class="scratch-info">Cosmetic surface mark. Within acceptable limits. No structural impact. Monitor for progression.</div>
+    </div>
+    <div class="scratch-card">
+      <div class="scratch-type">PAINT SCRATCH</div>
+      <div class="scratch-depth">0.08</div>
+      <div class="scratch-unit">mm depth · 61mm length</div>
+      <div class="scratch-severity">
+        <div class="sev-dot active low"></div><div class="sev-dot"></div><div class="sev-dot"></div><div class="sev-dot"></div><div class="sev-dot"></div>
+      </div>
+      <div class="scratch-info">Clearcoat-only abrasion. No base metal exposure. Risk: corrosion entry point if untreated.</div>
+    </div>
+    <div class="scratch-card">
+      <div class="scratch-type">ABRASION ZONE</div>
+      <div class="scratch-depth">0.6</div>
+      <div class="scratch-unit">mm avg · 18cm² area</div>
+      <div class="scratch-severity">
+        <div class="sev-dot active"></div><div class="sev-dot active"></div><div class="sev-dot active"></div><div class="sev-dot active"></div><div class="sev-dot"></div>
+      </div>
+      <div class="scratch-info">Multi-directional wear pattern from road debris impact. Surface roughness Ra: 3.2μm (limit: 1.6μm).</div>
+    </div>
+  </div>
+</div>
+
+<!-- WHAT AI CAN DETECT -->
+<div class="main-grid">
+
+  <!-- RUST -->
+  <div class="detection-card card-rust">
+    <div class="card-inner">
+      <div class="card-icon icon-rust">🔴</div>
+      <div class="card-name">RUST DETECTION</div>
+      <div class="card-desc">Deep learning vision models classify corrosion type, severity, and coverage area from high-resolution imagery.</div>
+      <ul class="capability-list">
+        <li>Surface vs structural rust classification</li>
+        <li>Corrosion % coverage with pixel-level segmentation</li>
+        <li>Pitting depth estimation from shadow analysis</li>
+        <li>Lifespan prediction with environmental inputs</li>
+        <li>ASTM grade scoring (A–F scale)</li>
+      </ul>
+    </div>
+    <div class="card-footer">
+      <div class="accuracy-bar">
+        <span class="acc-label">ACC</span>
+        <div class="acc-track"><div class="acc-fill" style="width:94%"></div></div>
+        <span class="acc-pct">94%</span>
+      </div>
+      <div style="margin-left:12px"><span class="tag-ai">AI ONLY</span></div>
+    </div>
+  </div>
+
+  <!-- SCRATCH -->
+  <div class="detection-card card-scratch">
+    <div class="card-inner">
+      <div class="card-icon icon-scratch">⚡</div>
+      <div class="card-name">SCRATCH DETECTION</div>
+      <div class="card-desc">Computer vision identifies scratch type, depth estimate, directionality, and risk to part function.</div>
+      <ul class="capability-list">
+        <li>Deep / surface / paint layer scratch classification</li>
+        <li>Scratch geometry: length, width, angle, depth</li>
+        <li>Surface roughness estimation (Ra value)</li>
+        <li>Multi-scratch pattern analysis (impact vs tool)</li>
+        <li>Corrosion risk from scratch exposure</li>
+        <li>Before/after progression comparison</li>
+      </ul>
+    </div>
+    <div class="card-footer">
+      <div class="accuracy-bar">
+        <span class="acc-label">ACC</span>
+        <div class="acc-track"><div class="acc-fill" style="width:91%"></div></div>
+        <span class="acc-pct">91%</span>
+      </div>
+      <div style="margin-left:12px"><span class="tag-ai">AI ONLY</span></div>
+    </div>
+  </div>
+
+  <!-- COUNTERFEIT -->
+  <div class="detection-card card-counterfeit">
+    <div class="card-inner">
+      <div class="card-icon icon-counterfeit">🔐</div>
+      <div class="card-name">COUNTERFEIT DETECTION</div>
+      <div class="card-desc">Multi-layer authentication comparing visual geometry, markings, and material signature against OEM database.</div>
+      <ul class="capability-list">
+        <li>Serial number / hologram OCR verification</li>
+        <li>Surface machining texture comparison</li>
+        <li>3D geometry match vs OEM CAD spec</li>
+        <li>Logo / font / stamp depth analysis</li>
+        <li>Packaging barcode chain-of-custody check</li>
+      </ul>
+    </div>
+    <div class="card-footer">
+      <div class="accuracy-bar">
+        <span class="acc-label">ACC</span>
+        <div class="acc-track"><div class="acc-fill" style="width:88%"></div></div>
+        <span class="acc-pct">88%</span>
+      </div>
+      <div style="margin-left:12px"><span class="tag-ai">AI + DB</span></div>
+    </div>
+  </div>
+
+  <!-- THICKNESS -->
+  <div class="detection-card card-thickness">
+    <div class="card-inner">
+      <div class="card-icon icon-thickness">📏</div>
+      <div class="card-name">THICKNESS & WEAR</div>
+      <div class="card-desc">Depth AI models estimate part thickness and wear using stereo vision or calibrated reference objects.</div>
+      <ul class="capability-list">
+        <li>Brake pad / disc thickness estimation</li>
+        <li>Groove depth on rotors and tires</li>
+        <li>Wear % vs OEM minimum spec</li>
+        <li>Remaining service life calculation</li>
+        <li>Requires calibration reference or LiDAR</li>
+      </ul>
+    </div>
+    <div class="card-footer">
+      <div class="accuracy-bar">
+        <span class="acc-label">ACC</span>
+        <div class="acc-track"><div class="acc-fill" style="width:82%"></div></div>
+        <span class="acc-pct">82%</span>
+      </div>
+      <div style="margin-left:12px"><span class="tag-hardware">+ SENSOR</span></div>
+    </div>
+  </div>
+
+  <!-- MATERIAL -->
+  <div class="detection-card card-material">
+    <div class="card-inner">
+      <div class="card-icon icon-material">⚗️</div>
+      <div class="card-name">MATERIAL ANALYSIS</div>
+      <div class="card-desc">AI interprets XRF/LIBS spectral output to identify alloy grade and elemental percentages precisely.</div>
+      <ul class="capability-list">
+        <li>Fe, C, Si, Mn, Cu, Zn elemental mapping</li>
+        <li>Alloy grade classification (cast vs forged)</li>
+        <li>OEM vs fake elemental profile comparison</li>
+        <li>Grain structure analysis (with microscopy)</li>
+        <li>Magnetic permeability cross-check</li>
+      </ul>
+    </div>
+    <div class="card-footer">
+      <div class="accuracy-bar">
+        <span class="acc-label">ACC</span>
+        <div class="acc-track"><div class="acc-fill" style="width:97%"></div></div>
+        <span class="acc-pct">97%</span>
+      </div>
+      <div style="margin-left:12px"><span class="tag-hardware">XRF/LIBS</span></div>
+    </div>
+  </div>
+
+  <!-- THERMAL -->
+  <div class="detection-card card-thermal">
+    <div class="card-inner">
+      <div class="card-icon icon-thermal">🌡️</div>
+      <div class="card-name">THERMAL ANALYSIS</div>
+      <div class="card-desc">AI + thermal cameras detect abnormal heat signatures indicating failing parts, friction anomalies, or seal leaks.</div>
+      <ul class="capability-list">
+        <li>Heat distribution mapping on brake/bearing parts</li>
+        <li>Hotspot detection and failure prediction</li>
+        <li>Friction irregularity classification</li>
+        <li>Seal and gasket failure indication</li>
+        <li>Exhaust component stress zones</li>
+      </ul>
+    </div>
+    <div class="card-footer">
+      <div class="accuracy-bar">
+        <span class="acc-label">ACC</span>
+        <div class="acc-track"><div class="acc-fill" style="width:89%"></div></div>
+        <span class="acc-pct">89%</span>
+      </div>
+      <div style="margin-left:12px"><span class="tag-hardware">IR CAM</span></div>
+    </div>
+  </div>
+
+  <!-- CRACK -->
+  <div class="detection-card card-crack">
+    <div class="card-inner">
+      <div class="card-icon icon-crack">💢</div>
+      <div class="card-name">CRACK & FRACTURE</div>
+      <div class="card-desc">Anomaly detection models identify micro-cracks invisible to the naked eye using high-resolution imaging and edge AI.</div>
+      <ul class="capability-list">
+        <li>Hairline crack detection at 0.01mm resolution</li>
+        <li>Crack propagation rate prediction under load</li>
+        <li>Subsurface fracture (with ultrasonic sensor)</li>
+        <li>Failure point estimation under stress</li>
+        <li>Thread / fastener integrity check</li>
+      </ul>
+    </div>
+    <div class="card-footer">
+      <div class="accuracy-bar">
+        <span class="acc-label">ACC</span>
+        <div class="acc-track"><div class="acc-fill" style="width:86%"></div></div>
+        <span class="acc-pct">86%</span>
+      </div>
+      <div style="margin-left:12px"><span class="tag-ai">AI ONLY</span></div>
+    </div>
+  </div>
+
+  <!-- ACOUSTIC -->
+  <div class="detection-card card-acoustic">
+    <div class="card-inner">
+      <div class="card-icon icon-acoustic">🔊</div>
+      <div class="card-name">ACOUSTIC FINGERPRINT</div>
+      <div class="card-desc">AI analyzes vibration FFT profiles and sound signatures to classify genuine vs counterfeit rotating parts.</div>
+      <ul class="capability-list">
+        <li>Bearing / pulley resonance pattern analysis</li>
+        <li>FFT spectrum OEM vs fake comparison</li>
+        <li>Wear-induced harmonic detection</li>
+        <li>Knock / rattle classification</li>
+        <li>Real-time in-vehicle monitoring</li>
+      </ul>
+    </div>
+    <div class="card-footer">
+      <div class="accuracy-bar">
+        <span class="acc-label">ACC</span>
+        <div class="acc-track"><div class="acc-fill" style="width:83%"></div></div>
+        <span class="acc-pct">83%</span>
+      </div>
+      <div style="margin-left:12px"><span class="tag-hardware">+ MIC</span></div>
+    </div>
+  </div>
+
+  <!-- WEAR PATTERN -->
+  <div class="detection-card card-wear">
+    <div class="card-inner">
+      <div class="card-icon icon-wear">🔩</div>
+      <div class="card-name">WEAR PATTERN AI</div>
+      <div class="card-desc">Pattern recognition identifies abnormal wear signatures indicating misalignment, overload, or improper installation.</div>
+      <ul class="capability-list">
+        <li>Uneven wear pattern classification</li>
+        <li>Misalignment signature detection</li>
+        <li>Overload / abuse pattern recognition</li>
+        <li>Coating delamination detection</li>
+        <li>Thread pitch, depth and damage analysis</li>
+      </ul>
+    </div>
+    <div class="card-footer">
+      <div class="accuracy-bar">
+        <span class="acc-label">ACC</span>
+        <div class="acc-track"><div class="acc-fill" style="width:90%"></div></div>
+        <span class="acc-pct">90%</span>
+      </div>
+      <div style="margin-left:12px"><span class="tag-ai">AI ONLY</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SYSTEM PIPELINE -->
+<div class="pipeline-section">
+  <div class="section-label">AI DETECTION PIPELINE</div>
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-icon active">📷</div>
+      <div class="pipe-name">IMAGE CAPTURE</div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon active">🔍</div>
+      <div class="pipe-name">PART IDENTIFICATION</div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon active">⚡</div>
+      <div class="pipe-name">SCRATCH DETECTION</div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon active">🔴</div>
+      <div class="pipe-name">RUST ANALYSIS</div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon">📏</div>
+      <div class="pipe-name">THICKNESS MEASURE</div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon">🔐</div>
+      <div class="pipe-name">AUTH CHECK</div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon">⚗️</div>
+      <div class="pipe-name">MATERIAL SCAN</div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon">📊</div>
+      <div class="pipe-name">SCORE & REPORT</div>
+    </div>
+  </div>
+</div>
+
+<!-- SPEC TABLES -->
+<div class="spec-section">
+  <div class="spec-table">
+    <div class="spec-table-header">DETECTION CAPABILITY MATRIX</div>
+    <table>
+      <tr>
+        <td>RUST SEVERITY GRADING</td>
+        <td class="td-green">✓ Camera Only</td>
+      </tr>
+      <tr>
+        <td>SCRATCH DEPTH (visual est.)</td>
+        <td class="td-green">✓ Camera Only</td>
+      </tr>
+      <tr>
+        <td>SCRATCH DEPTH (precise mm)</td>
+        <td class="td-yellow">⚠ LiDAR / Stylus</td>
+      </tr>
+      <tr>
+        <td>COUNTERFEIT DETECTION</td>
+        <td class="td-green">✓ Camera + DB</td>
+      </tr>
+      <tr>
+        <td>ELEMENTAL COMPOSITION</td>
+        <td class="td-blue">◈ XRF / LIBS Sensor</td>
+      </tr>
+      <tr>
+        <td>MICRO-CRACK DETECTION</td>
+        <td class="td-green">✓ Hi-Res Camera</td>
+      </tr>
+      <tr>
+        <td>SUBSURFACE FRACTURE</td>
+        <td class="td-blue">◈ Ultrasonic Sensor</td>
+      </tr>
+      <tr>
+        <td>THERMAL ANOMALY</td>
+        <td class="td-blue">◈ IR Camera</td>
+      </tr>
+      <tr>
+        <td>ACOUSTIC FINGERPRINT</td>
+        <td class="td-blue">◈ Microphone</td>
+      </tr>
+    </table>
+  </div>
+  <div class="spec-table">
+    <div class="spec-table-header">SAMPLE BRAKE DISC REPORT — SCAN RESULTS</div>
+    <table>
+      <tr><td>PART TYPE</td><td>Ventilated Brake Disc</td></tr>
+      <tr><td>OEM MATCH</td><td class="td-green">VERIFIED ✓</td></tr>
+      <tr><td>DISC THICKNESS</td><td class="td-yellow">17.2mm (min: 16mm)</td></tr>
+      <tr><td>RUST COVERAGE</td><td class="td-red">31% — HIGH ✗</td></tr>
+      <tr><td>DEEP SCRATCHES</td><td class="td-red">2 detected (>0.5mm)</td></tr>
+      <tr><td>SURFACE SCRATCHES</td><td class="td-yellow">4 detected (cosmetic)</td></tr>
+      <tr><td>MICRO-CRACKS</td><td class="td-red">1 — MONITOR CLOSELY</td></tr>
+      <tr><td>MATERIAL GRADE</td><td class="td-acc">GG25 Cast Iron ✓</td></tr>
+      <tr><td>HEALTH SCORE</td><td class="td-yellow">52 / 100 — DEGRADED</td></tr>
+      <tr><td>ACTION REQUIRED</td><td class="td-red">REPLACE IN ≤ 4 MONTHS</td></tr>
+    </table>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-brand">AUTO<span>SCAN</span> AI SYSTEM</div>
+  <div class="footer-info">12 DETECTION MODULES · REAL-TIME ANALYSIS · OEM DATABASE INTEGRATED · v4.2.1</div>
+  <div style="display:flex;gap:8px">
+    <span class="tag-ai">AI POWERED</span>
+    <span class="tag-hardware">MULTI-SENSOR</span>
+  </div>
+</footer>
+
+<script>
+  let scanning = false;
+  let boxesVisible = false;
+  const messages = [
+    "INITIALIZING VISION MODEL v4.2.1...",
+    "LOADING OEM BRAKE DISC REFERENCE DB...",
+    "RUNNING OBJECT DETECTION — PART IDENTIFIED: VENTILATED BRAKE DISC",
+    "ANALYZING SURFACE TEXTURE — 4096 KEYPOINTS EXTRACTED",
+    "RUST DETECTION: COVERAGE 31.4% — GRADE D2 — HIGH SEVERITY",
+    "SCRATCH ANALYSIS: 2 DEEP (>0.5mm), 4 SURFACE, 1 ABRASION ZONE DETECTED",
+    "MICRO-CRACK DETECTED AT COORDINATES (55,75) — MONITORING REQUIRED",
+    "THICKNESS ESTIMATION: 17.2mm — ABOVE MINIMUM LIMIT (16.0mm) ✓",
+    "AUTHENTICITY CHECK: SERIAL OEM-BD-2847 — VERIFIED GENUINE ✓",
+    "XRF COMPOSITION: Fe 92.1%, C 3.5%, Si 2.2%, Mn 1.2% — MATCHES OEM SPEC",
+    "HEALTH SCORE CALCULATED: 52/100 — STATUS: DEGRADED — REPLACE ≤ 4 MONTHS",
+    "SCAN COMPLETE — REPORT GENERATED",
+  ];
+
+  let msgIdx = 0;
+
+  function startScan() {
+    if (scanning) return;
+    scanning = true;
+    msgIdx = 0;
+    document.getElementById('scanZone').classList.add('scanning');
+    boxesVisible = false;
+    document.getElementById('partDisplay').classList.remove('show-boxes');
+
+    function showNext() {
+      if (msgIdx < messages.length) {
+        document.getElementById('readoutText').textContent = messages[msgIdx++];
+        if (msgIdx >= 5) {
+          document.getElementById('partDisplay').classList.add('show-boxes');
+          boxesVisible = true;
+        }
+        setTimeout(showNext, 700 + Math.random() * 400);
+      } else {
+        scanning = false;
+        document.getElementById('scanZone').classList.remove('scanning');
+      }
+    }
+    showNext();
+  }
+
+  function resetScan() {
+    scanning = false;
+    document.getElementById('scanZone').classList.remove('scanning');
+    document.getElementById('partDisplay').classList.remove('show-boxes');
+    document.getElementById('readoutText').textContent = 'READY — CLICK "RUN SCAN" TO ANALYZE PART';
+    boxesVisible = false;
+  }
+
+  function toggleBoxes() {
+    boxesVisible = !boxesVisible;
+    document.getElementById('partDisplay').classList.toggle('show-boxes', boxesVisible);
+  }
+
+  // Animate accuracy bars on load
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.querySelectorAll('.acc-fill').forEach(el => {
+        // width already set in inline style, just trigger reflow
+        const w = el.style.width;
+        el.style.width = '0%';
+        requestAnimationFrame(() => {
+          el.style.transition = 'width 1.5s ease';
+          el.style.width = w;
+        });
+      });
+    }, 400);
+  });
+</script>
+
+</body>
+</html>
